@@ -35,6 +35,37 @@ var fieldDictionary = {
   '71G': { name: 'Receiver Charges', key: 'receiverCharges', format: '3!a15d', compound: true },
   '72':  { name: 'Sender to Receiver Information', key: 'senderToReceiverInfo', format: '6*35x' },
   '77B': { name: 'Regulatory Reporting', key: 'regulatoryReporting', format: '3*35x' },
+  // MT300 FX Confirmation fields
+  '15A': { name: 'New Sequence (General Info)', key: 'sequenceA', format: 'empty', section: true },
+  '15B': { name: 'New Sequence (Transaction Details)', key: 'sequenceB', format: 'empty', section: true },
+  '15C': { name: 'New Sequence (Optional General Info)', key: 'sequenceC', format: 'empty', section: true },
+  '15D': { name: 'New Sequence (Split Settlement)', key: 'sequenceD', format: 'empty', section: true },
+  '15E': { name: 'New Sequence (Reporting Info)', key: 'sequenceE', format: 'empty', section: true },
+  '22A': { name: 'Type of Operation', key: 'typeOfOperation', format: '4!c' },
+  '22C': { name: 'Common Reference', key: 'commonReference', format: '4!a4!n4!a' },
+  '82A': { name: 'Party A', key: 'partyA', format: 'BIC' },
+  '82D': { name: 'Party A (Name & Address)', key: 'partyA', format: '4*35x', party: true },
+  '87A': { name: 'Party B', key: 'partyB', format: 'BIC' },
+  '87D': { name: 'Party B (Name & Address)', key: 'partyB', format: '4*35x', party: true },
+  '30T': { name: 'Trade Date', key: 'tradeDate', format: '8!n' },
+  '30V': { name: 'Value Date', key: 'valueDate', format: '8!n' },
+  '32B': { name: 'Currency / Amount Bought', key: 'amountBought', format: '3!a15d', compound: true },
+  '32E': { name: 'Currency / Amount', key: 'currencyAmount', format: '3!a15d', compound: true },
+  '34B': { name: 'Currency / Amount', key: 'currencyAmount2', format: '3!a15d', compound: true },
+  // MT940/MT950 Statement fields
+  '25':  { name: 'Account Identification', key: 'accountId', format: '35x' },
+  '25P': { name: 'Account Identification (with BIC)', key: 'accountId', format: '35x' },
+  '28C': { name: 'Statement Number / Sequence', key: 'statementNumber', format: '5n[/5n]' },
+  '60F': { name: 'Opening Balance (First)', key: 'openingBalance', format: '1!a6!n3!a15d', compound: true },
+  '60M': { name: 'Opening Balance (Intermediate)', key: 'openingBalance', format: '1!a6!n3!a15d', compound: true },
+  '61':  { name: 'Statement Line', key: 'statementLine', format: 'complex' },
+  '62F': { name: 'Closing Balance (Final)', key: 'closingBalance', format: '1!a6!n3!a15d', compound: true },
+  '62M': { name: 'Closing Balance (Intermediate)', key: 'closingBalance', format: '1!a6!n3!a15d', compound: true },
+  '64':  { name: 'Closing Available Balance', key: 'closingAvailableBalance', format: '1!a6!n3!a15d', compound: true },
+  '65':  { name: 'Forward Available Balance', key: 'forwardAvailableBalance', format: '1!a6!n3!a15d', compound: true },
+  '86':  { name: 'Information to Account Owner', key: 'infoToOwner', format: '6*65x' },
+  // MT199 Free Format
+  '79':  { name: 'Narrative', key: 'narrative', format: '35*50x' },
 };
 
 // ─── MESSAGE TYPE SCHEMAS ───
@@ -48,6 +79,26 @@ var schemaRegistry = {
     name: 'General Financial Institution Transfer',
     mandatory: ['20', '21', '32A', '52A|52D', '58A|58D'],
     optional: ['13C', '53A|53B', '54A', '56A|56D', '57A|57D', '72'],
+  },
+  'MT300': {
+    name: 'FX Confirmation',
+    mandatory: ['15A', '20', '22A', '22C', '82A|82D', '87A|87D', '15B', '30T', '30V', '36', '32B', '33B', '57A|57D'],
+    optional: ['21', '58A|58D', '15C', '15D', '15E', '72'],
+  },
+  'MT940': {
+    name: 'Customer Statement Message',
+    mandatory: ['20', '25', '28C', '60F|60M', '62F|62M'],
+    optional: ['21', '25P', '61', '86', '64', '65'],
+  },
+  'MT950': {
+    name: 'Statement Message',
+    mandatory: ['20', '25', '28C', '60F|60M', '62F|62M'],
+    optional: ['61', '86', '64', '65'],
+  },
+  'MT199': {
+    name: 'Free Format Message',
+    mandatory: ['20', '79'],
+    optional: ['21'],
   },
 };
 
@@ -390,30 +441,15 @@ function buildJsonOutput(result) {
     messageType: result.messageType,
   };
 
-  if (result.extracted.transactionReference) json.transactionReference = result.extracted.transactionReference;
-  if (result.extracted.relatedReference) json.relatedReference = result.extracted.relatedReference;
-  if (result.extracted.bankOperationCode) json.bankOperationCode = result.extracted.bankOperationCode;
-  if (result.extracted.valueDate) json.valueDate = result.extracted.valueDate;
-  if (result.extracted.currency) json.currency = result.extracted.currency;
-  if (result.extracted.amount !== undefined) json.amount = result.extracted.amount;
-
-  if (result.extracted.orderingCustomer) json.orderingCustomer = result.extracted.orderingCustomer;
-  if (result.extracted.orderingInstitution) json.orderingInstitution = result.extracted.orderingInstitution;
-  if (result.extracted.senderCorrespondent) json.senderCorrespondent = result.extracted.senderCorrespondent;
-  if (result.extracted.receiverCorrespondent) json.receiverCorrespondent = result.extracted.receiverCorrespondent;
-  if (result.extracted.intermediaryInstitution) json.intermediaryInstitution = result.extracted.intermediaryInstitution;
-  if (result.extracted.accountWithInstitution) json.accountWithInstitution = result.extracted.accountWithInstitution;
-  if (result.extracted.beneficiary) json.beneficiary = result.extracted.beneficiary;
-  if (result.extracted.beneficiaryInstitution) json.beneficiaryInstitution = result.extracted.beneficiaryInstitution;
-
-  if (result.extracted.remittanceInformation) json.remittanceInformation = result.extracted.remittanceInformation;
-  if (result.extracted.chargeBearer) json.chargeBearer = result.extracted.chargeBearer;
-  if (result.extracted.senderCharges) json.senderCharges = result.extracted.senderCharges;
-  if (result.extracted.receiverCharges) json.receiverCharges = result.extracted.receiverCharges;
-  if (result.extracted.senderToReceiverInfo) json.senderToReceiverInfo = result.extracted.senderToReceiverInfo;
-  if (result.extracted.regulatoryReporting) json.regulatoryReporting = result.extracted.regulatoryReporting;
-  if (result.extracted.instructionCode) json.instructionCode = result.extracted.instructionCode;
-  if (result.extracted.exchangeRate) json.exchangeRate = result.extracted.exchangeRate;
+  // Dynamically include all extracted fields
+  var keys = Object.keys(result.extracted);
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var v = result.extracted[k];
+    if (v !== undefined && v !== null && v !== '') {
+      json[k] = v;
+    }
+  }
 
   json._meta = {
     valid: result.valid,
