@@ -274,6 +274,14 @@ body {
   color: var(--accent-dark);
 }
 
+.sample-dropdown .uk-nav>li>a.uk-disabled,
+.sample-dropdown .uk-nav>li>a[disabled] {
+  color: var(--text-muted);
+  cursor: default;
+  pointer-events: none;
+  font-style: italic;
+}
+
 .sample-dropdown .uk-nav-header {
   font-family: var(--font-mono);
   font-size: var(--size-xs);
@@ -713,6 +721,75 @@ body {
 
 .envelope-value {
   color: var(--text-secondary);
+}
+
+/* ─── JSON PREVIEW ─── */
+.json-preview {
+  position: relative;
+  background: #282C34;
+  border-radius: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.json-preview pre {
+  margin: 0;
+  padding: 16px 20px;
+  overflow-x: auto;
+  background: transparent !important;
+}
+
+.json-preview code {
+  font-family: var(--font-mono);
+  font-size: var(--size-sm);
+  line-height: 1.65;
+  background: transparent !important;
+  color: #ABB2BF;
+}
+
+/* Atom One Dark overrides scoped to .json-preview */
+.json-preview .hljs-attr { color: #E06C75; }
+.json-preview .hljs-string { color: #98C379; }
+.json-preview .hljs-number { color: #D19A66; }
+.json-preview .hljs-literal { color: #56B6C2; }
+.json-preview .hljs-punctuation { color: #ABB2BF; }
+
+.json-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-family: var(--font-mono);
+  font-size: var(--size-sm);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  z-index: 1;
+}
+
+.json-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.json-copy-btn img {
+  width: 14px;
+  height: 14px;
+  filter: brightness(0) invert(1);
+  opacity: 0.6;
+}
+
+.json-copy-btn:hover img {
+  opacity: 1;
 }
 
 /* ─── ACTIONS DROPDOWN ─── */

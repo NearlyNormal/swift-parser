@@ -55,6 +55,10 @@ var schemaRegistry = {
 var sampleMessages = {
   'mt103': '{1:F01NWBKGB2LAXXX0000000000}\n{2:I103COBADEFFXXXXN}\n{4:\n:20:SHANX-20250101-001\n:23B:CRED\n:32A:250101USD10000,00\n:50K:/GB29NWBK60161331926819\nAcme Corporation\n1 Canada Square\nLondon E14 5AB\n:59:/DE89370400440532013000\nGlobal Trade Bank\nNeue Mainzer Str 32\nFrankfurt 60311\n:70:INVOICE REF 2025-INV-0042\n:71A:SHA\n-}',
   'mt202': '{1:F01NWBKGB2LAXXX0000000000}\n{2:I202COBADEFFXXXXN}\n{4:\n:20:SHANX-COV-20250101\n:21:SHANX-20250101-001\n:32A:250101USD10000,00\n:52A:NWBKGB2L\n:58A:COBADEFF\n-}',
+  'mt300': '{1:F01NWBKGB2LAXXX0000000000}\n{2:I300COBADEFFXXXXN}\n{4:\n:15A:\n:20:FX-20250115-007\n:21:RELREF-20250115\n:22A:NEWT\n:22C:NWBK0001COBA\n:82A:NWBKGB2L\n:87A:COBADEFF\n:15B:\n:30T:20250117\n:30V:20250119\n:36:1,0850\n:32B:USD1500000,00\n:57A:COBADEFF\n:33B:EUR1382488,48\n:57A:NWBKGB2L\n:58A:COBADEFF\n-}',
+  'mt199': '{1:F01NWBKGB2LAXXX0000000000}\n{2:I199COBADEFFXXXXN}\n{4:\n:20:FREEFORMAT-001\n:21:SHANX-20250101-001\n:79:THIS IS A FREE FORMAT MESSAGE\nREGARDING PAYMENT REF SHANX-20250101-001\nPLEASE CONFIRM RECEIPT OF FUNDS\nREGARDS TREASURY OPS\n-}',
+  'mt940': '{1:F01NWBKGB2LAXXX0000000000}\n{2:I940COBADEFFXXXXN}\n{4:\n:20:STMT-20250131\n:25:GB29NWBK60161331926819\n:28C:00001/001\n:60F:C250101GBP50000,00\n:61:2501150115D10000,00NTRFshanx-ref-001//ACME-PAY-001\n:86:PAYMENT TO ACME CORPORATION\n:61:2501200120C25000,00NTRFCLIENT-RECEIPT//RCV-2025-042\n:86:RECEIPT FROM CLIENT SERVICES\n:62F:C250131GBP65000,00\n:64:C250131GBP65000,00\n-}',
+  'mt950': '{1:F01NWBKGB2LAXXX0000000000}\n{2:I950COBADEFFXXXXN}\n{4:\n:20:FISTMT-20250131\n:25:GB29NWBK60161331926819\n:28C:00001/001\n:60F:C250101USD100000,00\n:61:2501100110D50000,00NTRFshanx-cov-001//COV-2025-001\n:86:COVER PAYMENT NWBKGB2L TO COBADEFF\n:61:2501150115C75000,00NTRFINCOMING-001//RCV-2025-010\n:86:INCOMING TRANSFER FROM JPMORGAN\n:62F:C250131USD125000,00\n-}',
 };
 
 // ─── ENVELOPE PARSER ───
@@ -426,89 +430,128 @@ function renderResults(result) {
   var container = document.getElementById('results-content');
   var actionsWrap = document.getElementById('actions-dropdown-wrap');
   actionsWrap.classList.add('visible');
+  container.innerHTML = '';
 
-  var html = '<div class="results-body-inner">';
+  // Summary banner — outside results-body-inner so it's flush to the top
+  var summary = document.createElement('div');
+  var errCount = result.errors.length;
+  var warnCount = result.warnings.length;
 
-  // Summary banner
   if (result.valid) {
-    html += '<div class="validation-summary summary-valid">';
-    html += '<span>&#10003;</span> Valid ' + escHtml(result.messageType);
-    if (result.messageTypeName) html += ' &mdash; ' + escHtml(result.messageTypeName);
-    html += '</div>';
+    summary.className = 'validation-summary summary-valid';
+    var msg = 'Valid <span class="msg-type-badge">' + escHtml(result.messageType) + '</span> message';
+    if (result.messageTypeName) msg += ' &mdash; ' + escHtml(result.messageTypeName);
+    if (warnCount > 0) msg += ', ' + warnCount + ' warning' + (warnCount !== 1 ? 's' : '');
+    summary.innerHTML = '<span uk-icon="icon: check; ratio: 1.1"></span><span>' + msg + '</span>';
   } else {
-    html += '<div class="validation-summary summary-invalid">';
-    html += '<span>&#10007;</span> ' + result.errors.length + ' error' + (result.errors.length !== 1 ? 's' : '') + ' found';
-    if (result.messageType !== 'Unknown') html += ' in ' + escHtml(result.messageType);
-    html += '</div>';
+    summary.className = 'validation-summary summary-invalid';
+    var msg = errCount + ' error' + (errCount !== 1 ? 's' : '') + ' found';
+    if (result.messageType !== 'Unknown') msg += ' in <span class="msg-type-badge">' + escHtml(result.messageType) + '</span>';
+    if (warnCount > 0) msg += ', ' + warnCount + ' warning' + (warnCount !== 1 ? 's' : '');
+    summary.innerHTML = '<span uk-icon="icon: close; ratio: 1.1"></span><span>' + msg + '</span>';
   }
+  container.appendChild(summary);
+
+  // Inner wrap for all content below the banner
+  var inner = document.createElement('div');
+  inner.className = 'results-body-inner';
 
   // Errors
-  if (result.errors.length > 0) {
-    html += '<div style="padding: 12px 20px 0">';
-    html += '<div class="section-header">Errors <span class="section-count">' + result.errors.length + '</span></div>';
+  if (errCount > 0) {
+    var section = '<div class="section-header">Errors <span class="section-count">' + errCount + '</span></div>';
     for (var i = 0; i < result.errors.length; i++) {
       var err = result.errors[i];
-      html += '<div class="error-item type-error">';
-      html += '<span class="ei-icon">&#10007;</span>';
-      html += '<div><span>' + escHtml(err.message) + '</span>';
-      if (err.tag) html += '<span class="field-path"><span class="tag-badge">:' + escHtml(err.tag) + ':</span></span>';
-      html += '</div></div>';
+      section += '<div class="error-item type-error">';
+      section += '<span class="ei-icon" uk-icon="icon: close; ratio: 0.7"></span>';
+      section += '<div><span>' + escHtml(err.message) + '</span>';
+      if (err.tag) section += '<span class="field-path"><span class="tag-badge">:' + escHtml(err.tag) + ':</span></span>';
+      section += '</div></div>';
     }
-    html += '</div>';
+    var errDiv = document.createElement('div');
+    errDiv.innerHTML = section;
+    inner.appendChild(errDiv);
   }
 
   // Warnings
-  if (result.warnings.length > 0) {
-    html += '<div style="padding: 12px 20px 0">';
-    html += '<div class="section-header">Warnings <span class="section-count">' + result.warnings.length + '</span></div>';
+  if (warnCount > 0) {
+    var section = '<div class="section-header">Warnings <span class="section-count">' + warnCount + '</span></div>';
     for (var i = 0; i < result.warnings.length; i++) {
       var warn = result.warnings[i];
-      html += '<div class="error-item type-warning">';
-      html += '<span class="ei-icon">&#9888;</span>';
-      html += '<div><span>' + escHtml(warn.message) + '</span>';
-      if (warn.tag) html += '<span class="field-path"><span class="tag-badge">:' + escHtml(warn.tag) + ':</span></span>';
-      html += '</div></div>';
+      section += '<div class="error-item type-warning">';
+      section += '<span class="ei-icon" uk-icon="icon: warning; ratio: 0.7"></span>';
+      section += '<div><span>' + escHtml(warn.message) + '</span>';
+      if (warn.tag) section += '<span class="field-path"><span class="tag-badge">:' + escHtml(warn.tag) + ':</span></span>';
+      section += '</div></div>';
     }
-    html += '</div>';
+    var warnDiv = document.createElement('div');
+    warnDiv.innerHTML = section;
+    inner.appendChild(warnDiv);
   }
 
   // Parsed Fields
   var fieldKeys = Object.keys(result.fields);
   if (fieldKeys.length > 0) {
-    html += '<div style="padding: 12px 20px 0">';
-    html += '<div class="section-header">Parsed Fields <span class="section-count">' + fieldKeys.length + '</span></div>';
-    html += '<div class="fields-grid">';
-
+    var section = '<div class="section-header">Parsed Fields <span class="section-count">' + fieldKeys.length + '</span></div>';
+    section += '<div class="fields-grid">';
     for (var k = 0; k < fieldKeys.length; k++) {
-      var fld = result.fields[fieldKeys[k]];
-      html += renderField(fld);
+      section += renderField(result.fields[fieldKeys[k]]);
     }
-
-    html += '</div></div>';
+    section += '</div>';
+    var fieldsDiv = document.createElement('div');
+    fieldsDiv.innerHTML = section;
+    inner.appendChild(fieldsDiv);
   }
 
   // Envelope Info
   if (result.envelope && (result.envelope.senderBIC || result.envelope.receiverBIC)) {
-    html += '<div style="padding: 12px 20px 0">';
-    html += '<div class="section-header">Envelope</div>';
-    html += '<div class="envelope-section">';
+    var section = '<div class="section-header">Envelope</div><div class="envelope-section">';
     if (result.envelope.senderBIC) {
-      html += '<div class="envelope-row"><span class="envelope-label">Sender BIC</span><span class="envelope-value">' + escHtml(result.envelope.senderBIC) + '</span></div>';
+      section += '<div class="envelope-row"><span class="envelope-label">Sender BIC</span><span class="envelope-value">' + escHtml(result.envelope.senderBIC) + '</span></div>';
     }
     if (result.envelope.receiverBIC) {
-      html += '<div class="envelope-row"><span class="envelope-label">Receiver BIC</span><span class="envelope-value">' + escHtml(result.envelope.receiverBIC) + '</span></div>';
+      section += '<div class="envelope-row"><span class="envelope-label">Receiver BIC</span><span class="envelope-value">' + escHtml(result.envelope.receiverBIC) + '</span></div>';
     }
     if (result.envelope.direction) {
-      html += '<div class="envelope-row"><span class="envelope-label">Direction</span><span class="envelope-value">' + escHtml(result.envelope.direction) + '</span></div>';
+      section += '<div class="envelope-row"><span class="envelope-label">Direction</span><span class="envelope-value">' + escHtml(result.envelope.direction) + '</span></div>';
     }
     if (result.envelope.priority) {
-      html += '<div class="envelope-row"><span class="envelope-label">Priority</span><span class="envelope-value">' + escHtml(result.envelope.priority) + '</span></div>';
+      section += '<div class="envelope-row"><span class="envelope-label">Priority</span><span class="envelope-value">' + escHtml(result.envelope.priority) + '</span></div>';
     }
-    html += '</div></div>';
+    section += '</div>';
+    var envDiv = document.createElement('div');
+    envDiv.innerHTML = section;
+    inner.appendChild(envDiv);
   }
 
-  html += '</div>';
-  container.innerHTML = html;
+  // JSON Preview
+  var json = buildJsonOutput(result);
+  var jsonStr = JSON.stringify(json, null, 2);
+  var jsonSection = document.createElement('div');
+  jsonSection.innerHTML = '<div class="section-header">JSON Output</div>';
+  var jsonBox = document.createElement('div');
+  jsonBox.className = 'json-preview';
+  jsonBox.innerHTML =
+    '<button class="json-copy-btn" id="json-copy-inline" title="Copy JSON">' +
+    '<img src="assets/copy.svg" alt=""> Copy' +
+    '</button>' +
+    '<pre><code class="language-json">' + escHtml(jsonStr) + '</code></pre>';
+  jsonSection.appendChild(jsonBox);
+  inner.appendChild(jsonSection);
+
+  container.appendChild(inner);
+
+  // Highlight the JSON block
+  var codeBlock = jsonBox.querySelector('code');
+  if (typeof hljs !== 'undefined') {
+    hljs.highlightElement(codeBlock);
+  }
+
+  // Wire up inline copy button
+  document.getElementById('json-copy-inline').addEventListener('click', function() {
+    navigator.clipboard.writeText(jsonStr).then(function() {
+      showToast('JSON copied to clipboard');
+    });
+  });
 
   // Store result for copy
   lastResult = result;

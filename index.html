@@ -14,6 +14,7 @@
   <!-- Highlight.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css" id="hljs-theme">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -57,9 +58,26 @@
                   <ul class="uk-nav uk-dropdown-nav">
                     <li class="uk-nav-header">Customer Payments</li>
                     <li><a href="#" data-sample="mt103">MT103: Single Customer Credit Transfer</a></li>
+                    <li><a class="uk-disabled" disabled>MT104: Direct Debit (coming soon)</a></li>
                     <li class="uk-nav-divider"></li>
                     <li class="uk-nav-header">Institution Transfers</li>
                     <li><a href="#" data-sample="mt202">MT202: General Financial Institution Transfer</a></li>
+                    <li><a class="uk-disabled" disabled>MT202 COV: Cover Payment (coming soon)</a></li>
+                    <li><a class="uk-disabled" disabled>MT210: Notice to Receive (coming soon)</a></li>
+                    <li class="uk-nav-divider"></li>
+                    <li class="uk-nav-header">Treasury</li>
+                    <li><a href="#" data-sample="mt300">MT300: FX Confirmation</a></li>
+                    <li><a class="uk-disabled" disabled>MT320: Fixed Loan/Deposit (coming soon)</a></li>
+                    <li class="uk-nav-divider"></li>
+                    <li class="uk-nav-header">Cash Management</li>
+                    <li><a href="#" data-sample="mt940">MT940: Customer Statement</a></li>
+                    <li><a href="#" data-sample="mt950">MT950: Statement Message (FI to FI)</a></li>
+                    <li><a class="uk-disabled" disabled>MT900: Confirmation of Debit (coming soon)</a></li>
+                    <li><a class="uk-disabled" disabled>MT910: Confirmation of Credit (coming soon)</a></li>
+                    <li class="uk-nav-divider"></li>
+                    <li class="uk-nav-header">Common</li>
+                    <li><a href="#" data-sample="mt199">MT199: Free Format</a></li>
+                    <li><a class="uk-disabled" disabled>MT999: Free Format General (coming soon)</a></li>
                   </ul>
                 </div>
               </div>
@@ -68,6 +86,10 @@
               <option value="auto">Auto-detect</option>
               <option value="MT103">MT103</option>
               <option value="MT202">MT202</option>
+              <option value="MT300">MT300</option>
+              <option value="MT940">MT940</option>
+              <option value="MT950">MT950</option>
+              <option value="MT199">MT199</option>
             </select>
           </div>
         </div>
