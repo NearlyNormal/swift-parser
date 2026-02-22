@@ -451,6 +451,12 @@ function buildJsonOutput(result) {
     }
   }
 
+  // Add plain English summary (strip HTML tags for JSON)
+  var englishParts = buildPlainEnglish(result);
+  if (englishParts.length > 0) {
+    json.summaryPlain = englishParts.join(' ').replace(/<[^>]*>/g, '');
+  }
+
   json._meta = {
     valid: result.valid,
     errors: result.errors.map(function(e) { return e.message; }),
@@ -459,6 +465,199 @@ function buildJsonOutput(result) {
   };
 
   return json;
+}
+
+// ─── PLAIN ENGLISH SUMMARY ───
+function buildPlainEnglish(result) {
+  var ext = result.extracted;
+  var env = result.envelope;
+  var type = result.messageType;
+  var parts = [];
+
+  function partyName(p) {
+    if (!p) return null;
+    if (typeof p === 'string') return p;
+    if (p.name) return p.name;
+    if (p.account) return 'account ' + p.account;
+    return null;
+  }
+
+  function partyAccount(p) {
+    if (!p) return null;
+    if (typeof p === 'string') return null;
+    return p.account || null;
+  }
+
+  function bicName(bic) {
+    return bic || null;
+  }
+
+  function fmtAmt(amount, currency) {
+    if (amount === undefined || amount === null) return null;
+    var num = (typeof amount === 'number') ? amount : parseFloat(String(amount).replace(',', '.'));
+    if (isNaN(num)) return currency ? currency + ' ' + amount : String(amount);
+    return currency ? formatAmount(num) + ' ' + currency : formatAmount(num);
+  }
+
+  var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmtDate(d) {
+    if (!d) return null;
+    var iso = d;
+    // Handle YYYYMMDD format
+    if (/^\d{8}$/.test(d)) {
+      iso = d.substring(0, 4) + '-' + d.substring(4, 6) + '-' + d.substring(6, 8);
+    }
+    // Handle YYYY-MM-DD format → "Jan 1, 2025"
+    var m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) {
+      var month = monthNames[parseInt(m[2], 10) - 1] || m[2];
+      var day = parseInt(m[3], 10);
+      return month + ' ' + day + ', ' + m[1];
+    }
+    return d;
+  }
+
+  if (type === 'MT103') {
+    var sender = partyName(ext.orderingCustomer);
+    var senderAcct = partyAccount(ext.orderingCustomer);
+    var receiver = partyName(ext.beneficiary);
+    var receiverAcct = partyAccount(ext.beneficiary);
+    var amt = fmtAmt(ext.amount, ext.currency);
+
+    var line1 = '';
+    if (sender && amt && receiver) {
+      line1 = '<span class="data">' + escHtml(sender) + '</span>';
+      if (senderAcct) line1 += ' (' + escHtml(senderAcct) + ')';
+      line1 += ' is sending <span class="data">' + escHtml(amt) + '</span> to <span class="data">' + escHtml(receiver) + '</span>';
+      if (receiverAcct) line1 += ' (' + escHtml(receiverAcct) + ')';
+      line1 += '.';
+      parts.push(line1);
+    }
+
+    if (env.senderBIC || env.receiverBIC) {
+      var route = 'Routed';
+      if (env.senderBIC) route += ' from <span class="data">' + escHtml(env.senderBIC) + '</span>';
+      if (env.receiverBIC) route += ' to <span class="data">' + escHtml(env.receiverBIC) + '</span>';
+      route += '.';
+      parts.push(route);
+    }
+
+    if (ext.chargeBearer) {
+      var cb = ext.chargeBearer;
+      if (cb === 'SHA') parts.push('Charges are shared between sender and receiver.');
+      else if (cb === 'OUR') parts.push('All charges paid by the sender.');
+      else if (cb === 'BEN') parts.push('All charges paid by the beneficiary.');
+    }
+
+    if (ext.remittanceInformation) {
+      parts.push('Reference: <span class="data">' + escHtml(ext.remittanceInformation) + '</span>.');
+    }
+
+    if (ext.valueDate) {
+      parts.push('Transaction date is <span class="data">' + escHtml(fmtDate(ext.valueDate)) + '</span>.');
+    }
+
+  } else if (type === 'MT202') {
+    var ordInst = partyName(ext.orderingInstitution) || bicName(ext.orderingInstitution);
+    var benInst = partyName(ext.beneficiaryInstitution) || bicName(ext.beneficiaryInstitution);
+    var amt = fmtAmt(ext.amount, ext.currency);
+
+    var line1 = '';
+    if (ordInst && amt && benInst) {
+      line1 = '<span class="data">' + escHtml(ordInst) + '</span> is transferring <span class="data">' + escHtml(amt) + '</span> to <span class="data">' + escHtml(benInst) + '</span>.';
+      parts.push(line1);
+    }
+
+    if (ext.transactionReference) {
+      parts.push('Transaction reference: <span class="data">' + escHtml(ext.transactionReference) + '</span>.');
+    }
+    if (ext.relatedReference) {
+      parts.push('Related to: <span class="data">' + escHtml(ext.relatedReference) + '</span>.');
+    }
+    if (ext.valueDate) {
+      parts.push('Transaction date is <span class="data">' + escHtml(fmtDate(ext.valueDate)) + '</span>.');
+    }
+
+  } else if (type === 'MT300') {
+    var partyA = bicName(ext.partyA);
+    var partyB = bicName(ext.partyB);
+
+    if (partyA && partyB) {
+      var line1 = '<span class="data">' + escHtml(partyA) + '</span> and <span class="data">' + escHtml(partyB) + '</span> are confirming an FX trade';
+      if (ext.typeOfOperation) {
+        var ops = { 'NEWT': 'new transaction', 'AMND': 'amendment', 'CANC': 'cancellation' };
+        line1 += ' (' + (ops[ext.typeOfOperation] || ext.typeOfOperation) + ')';
+      }
+      line1 += '.';
+      parts.push(line1);
+    }
+
+    var bought = ext.amountBought;
+    if (bought && typeof bought === 'string') {
+      var bCcy = bought.substring(0, 3);
+      var bAmt = bought.substring(3).replace(',', '.');
+      var bNum = parseFloat(bAmt);
+      if (!isNaN(bNum)) {
+        parts.push('Buying <span class="data">' + escHtml(fmtAmt(bNum, bCcy)) + '</span>.');
+      }
+    }
+
+    if (ext.instructedAmount && typeof ext.instructedAmount === 'object') {
+      parts.push('Selling <span class="data">' + escHtml(fmtAmt(ext.instructedAmount.amount, ext.instructedAmount.currency)) + '</span>.');
+    } else if (ext.instructedCurrency && ext.instructedAmount) {
+      parts.push('Selling <span class="data">' + escHtml(fmtAmt(ext.instructedAmount, ext.instructedCurrency)) + '</span>.');
+    }
+
+    if (ext.exchangeRate) {
+      parts.push('Exchange rate: <span class="data">' + escHtml(ext.exchangeRate) + '</span>.');
+    }
+    if (ext.tradeDate) {
+      parts.push('Trade date is <span class="data">' + escHtml(fmtDate(ext.tradeDate)) + '</span>. Transaction date is <span class="data">' + escHtml(fmtDate(ext.valueDate || '')) + '</span>.');
+    }
+
+  } else if (type === 'MT940' || type === 'MT950') {
+    var label = type === 'MT940' ? 'Customer statement' : 'FI-to-FI statement';
+    var line1 = label;
+    if (ext.accountId) line1 += ' for account <span class="data">' + escHtml(ext.accountId) + '</span>';
+    line1 += '.';
+    parts.push(line1);
+
+    if (ext.statementNumber) {
+      parts.push('Statement number: <span class="data">' + escHtml(ext.statementNumber) + '</span>.');
+    }
+
+    if (ext.openingBalance) {
+      var ob = ext.openingBalance;
+      if (typeof ob === 'string') {
+        parts.push('Opening balance: <span class="data">' + escHtml(ob) + '</span>.');
+      }
+    }
+    if (ext.closingBalance) {
+      var cb = ext.closingBalance;
+      if (typeof cb === 'string') {
+        parts.push('Closing balance: <span class="data">' + escHtml(cb) + '</span>.');
+      }
+    }
+
+  } else if (type === 'MT199') {
+    parts.push('Free format message.');
+    if (ext.transactionReference) {
+      parts.push('Reference: <span class="data">' + escHtml(ext.transactionReference) + '</span>.');
+    }
+    if (ext.relatedReference) {
+      parts.push('Related to: <span class="data">' + escHtml(ext.relatedReference) + '</span>.');
+    }
+    if (ext.narrative) {
+      parts.push(escHtml(ext.narrative));
+    }
+  }
+
+  // Fallback if no parts generated
+  if (parts.length === 0) {
+    parts.push(escHtml(result.messageType) + ' message with ' + Object.keys(result.fields).length + ' fields parsed.');
+  }
+
+  return parts;
 }
 
 // ─── RESULT RENDERING ───
@@ -491,6 +690,20 @@ function renderResults(result) {
   // Inner wrap for all content below the banner
   var inner = document.createElement('div');
   inner.className = 'results-body-inner';
+
+  // Plain English summary
+  var englishParts = buildPlainEnglish(result);
+  if (englishParts.length > 0) {
+    var summarySection = document.createElement('div');
+    summarySection.className = 'plain-english';
+    summarySection.innerHTML =
+      '<div class="plain-english-header">' +
+        '<div class="plain-english-icon"><img src="assets/summary.svg" alt=""></div>' +
+        '<span class="plain-english-label">Summary</span>' +
+      '</div>' +
+      '<div class="plain-english-text">' + englishParts.join(' ') + '</div>';
+    inner.appendChild(summarySection);
+  }
 
   // Errors
   if (errCount > 0) {
@@ -595,11 +808,15 @@ function renderResults(result) {
 
 function renderField(fld) {
   var html = '';
-  var tagLabel = '<span class="tag-badge">:' + escHtml(fld.tag) + ':</span> ' + escHtml(fld.name || 'Unknown');
+  var tagBadge = '<span class="tag-badge">:' + escHtml(fld.tag) + ':</span>';
+  var fieldName = escHtml(fld.name || 'Unknown');
 
   if (fld.party && typeof fld.decoded === 'object' && fld.decoded !== null) {
-    // Party field — render as stacked block (label on top, group below)
-    html += '<div class="field-row-stacked"><div class="field-label">' + tagLabel + '</div>';
+    // Party field — tag left, name + group right
+    html += '<div class="field-row-stacked">';
+    html += '<div class="field-tag-col">' + tagBadge + '</div>';
+    html += '<div class="field-content-col">';
+    html += '<div class="field-name">' + fieldName + '</div>';
     html += '<div class="parsed-field-group">';
     if (fld.decoded.account) {
       html += '<div class="group-row"><span class="group-label">Account</span><span class="group-value">' + escHtml(fld.decoded.account) + '</span></div>';
@@ -613,39 +830,55 @@ function renderField(fld) {
     if (fld.decoded.countryCity) {
       html += '<div class="group-row"><span class="group-label">Country/City</span><span class="group-value">' + escHtml(fld.decoded.countryCity) + '</span></div>';
     }
-    html += '</div></div>';
+    html += '</div></div></div>';
   } else if (fld.tag === '32A' && typeof fld.decoded === 'object') {
-    // Amount field
-    html += '<div class="field-row"><span class="field-label">' + tagLabel + '</span><span class="field-value">';
+    html += '<div class="field-row">';
+    html += '<div class="field-tag-col">' + tagBadge + '</div>';
+    html += '<div class="field-content-col"><div class="field-name">' + fieldName + '</div><div class="field-value">';
     html += '<span class="amount">' + formatAmount(fld.decoded.amount) + '</span> ';
     html += '<span class="currency-tag">' + escHtml(fld.decoded.currency) + '</span>';
     html += ' &mdash; Value date: ' + escHtml(fld.decoded.date);
-    html += '</span></div>';
+    html += '</div></div></div>';
   } else if (fld.tag === '33B' && typeof fld.decoded === 'object') {
-    html += '<div class="field-row"><span class="field-label">' + tagLabel + '</span><span class="field-value">';
+    html += '<div class="field-row">';
+    html += '<div class="field-tag-col">' + tagBadge + '</div>';
+    html += '<div class="field-content-col"><div class="field-name">' + fieldName + '</div><div class="field-value">';
     html += '<span class="amount">' + formatAmount(fld.decoded.amount) + '</span> ';
     html += '<span class="currency-tag">' + escHtml(fld.decoded.currency) + '</span>';
-    html += '</span></div>';
+    html += '</div></div></div>';
   } else if (fld.key === 'chargeBearer') {
     var chargeClass = 'charge-sha';
     if (fld.decoded === 'OUR') chargeClass = 'charge-our';
     else if (fld.decoded === 'BEN') chargeClass = 'charge-ben';
-    html += '<div class="field-row"><span class="field-label">' + tagLabel + '</span><span class="field-value">';
+    html += '<div class="field-row">';
+    html += '<div class="field-tag-col">' + tagBadge + '</div>';
+    html += '<div class="field-content-col"><div class="field-name">' + fieldName + '</div><div class="field-value">';
     html += '<span class="charge-badge ' + chargeClass + '">' + escHtml(fld.decoded) + '</span>';
-    html += '</span></div>';
+    html += '</div></div></div>';
   } else if ((fld.tag === '71F' || fld.tag === '71G') && typeof fld.decoded === 'object') {
     var charges = Array.isArray(fld.decoded) ? fld.decoded : [fld.decoded];
-    html += '<div class="field-row"><span class="field-label">' + tagLabel + '</span><span class="field-value">';
+    html += '<div class="field-row">';
+    html += '<div class="field-tag-col">' + tagBadge + '</div>';
+    html += '<div class="field-content-col"><div class="field-name">' + fieldName + '</div><div class="field-value">';
     for (var c = 0; c < charges.length; c++) {
       if (c > 0) html += ', ';
       html += '<span class="amount">' + formatAmount(charges[c].amount) + '</span> ';
       html += '<span class="currency-tag">' + escHtml(charges[c].currency) + '</span>';
     }
-    html += '</span></div>';
+    html += '</div></div></div>';
+  } else if (fld.decoded && fld.decoded.section) {
+    // Section marker (e.g. :15A:) — no value to show
+    html += '<div class="field-row">';
+    html += '<div class="field-tag-col">' + tagBadge + '</div>';
+    html += '<div class="field-content-col"><div class="field-name">' + fieldName + '</div></div>';
+    html += '</div>';
   } else {
     // Simple field
     var displayValue = typeof fld.decoded === 'string' ? fld.decoded : (fld.rawValue || '');
-    html += '<div class="field-row"><span class="field-label">' + tagLabel + '</span><span class="field-value">' + escHtml(displayValue) + '</span></div>';
+    html += '<div class="field-row">';
+    html += '<div class="field-tag-col">' + tagBadge + '</div>';
+    html += '<div class="field-content-col"><div class="field-name">' + fieldName + '</div><div class="field-value">' + escHtml(displayValue) + '</div></div>';
+    html += '</div>';
   }
 
   return html;

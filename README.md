@@ -21,12 +21,13 @@ Paste a raw SWIFT MT103 or MT202 message into the tool, and get back:
 |---|---|---|
 | MT103 | Single Customer Credit Transfer | ✓ v1.0 |
 | MT202 | General Financial Institution Transfer | ✓ v1.0 |
+| MT300 | FX Confirmation | ✓ v1.0 |
+| MT940 | Customer Statement Message | ✓ v1.0 |
+| MT950 | Statement Message | ✓ v1.0 |
+| MT199 | Free Format Message | ✓ v1.0 |
 | MT202 COV | Cover Payment | Planned v1.1 |
-| MT199 | Free Format Message | Planned v1.1 |
-| MT900 | Confirmation of Debit | Planned v1.2 |
-| MT910 | Confirmation of Credit | Planned v1.2 |
-| MT940 | Customer Statement Message | Planned v1.2 |
-| MT950 | Statement Message | Planned v1.2 |
+| MT900 | Confirmation of Debit | Planned v1.1 |
+| MT910 | Confirmation of Credit | Planned v1.1 |
 
 ---
 
@@ -171,6 +172,10 @@ SWIFT MT messages are plain text with a consistent structure: each field starts 
 ### v1.0: Launch
 - [x] MT103 full field parsing and decoding
 - [x] MT202 full field parsing and decoding
+- [x] MT300 FX Confirmation parsing and decoding
+- [x] MT940 Customer Statement parsing
+- [x] MT950 Statement Message parsing
+- [x] MT199 Free Format parsing
 - [x] Mandatory field validation
 - [x] Envelope block parsing (`{1:...}` `{2:...}` headers)
 - [x] Compound field decoding (`:32A:` date/currency/amount split)
@@ -181,16 +186,13 @@ SWIFT MT messages are plain text with a consistent structure: each field starts 
 
 ### v1.1: Coverage
 - [ ] MT202 COV (cover payments)
-- [ ] MT199 free format
+- [ ] MT900 / MT910 debit/credit confirmations
 - [ ] IBAN format validation
 - [ ] BIC/SWIFT code format validation
 - [ ] Plain English summary panel
 - [ ] PDF export
 
-### v1.2: Statement messages
-- [ ] MT940 Customer Statement
-- [ ] MT950 Statement Message
-- [ ] MT900 / MT910 debit/credit confirmations
+### v1.2: Extended
 - [ ] Batch parse: paste multiple messages separated by `$`
 
 ---
