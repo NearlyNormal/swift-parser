@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWIFT Message Parser</title>
+  <!-- UIKit -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.25.12/dist/css/uikit.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.25.12/dist/js/uikit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.25.12/dist/js/uikit-icons.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Highlight.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css" id="hljs-theme">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="uk-navbar-container" uk-navbar>
+    <div class="uk-navbar-left uk-margin-left">
+      <span class="app-title"><span class="accent">&gt;</span> SWIFT Message Parser</span>
+      <span class="version-badge">v1.0</span>
+      <button class="glossary-btn" id="glossary-btn" type="button" title="About this parser">
+        <img src="assets/info.svg" alt="About">
+      </button>
+    </div>
+    <div class="uk-navbar-right uk-margin-right">
+      <button class="validate-btn" id="parse-btn">
+        <img src="assets/validate.svg" alt=""> Parse Message
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="app-container">
+    <div class="panels-grid">
+
+      <!-- LEFT PANEL -->
+      <div class="panel-left">
+        <div class="panel-left-toolbar">
+          <span class="panel-left-title">MT Input</span>
+          <div class="toolbar-right">
+            <div class="toolbar-buttons">
+              <label class="toolbar-btn" style="margin:0">
+                <img src="assets/upload.svg" alt=""> Upload File
+                <input type="file" id="file-upload" accept=".txt,.mt,.fin" hidden>
+              </label>
+              <span class="toolbar-or">or</span>
+              <div class="uk-inline">
+                <button class="toolbar-btn" type="button" id="load-sample-btn">
+                  <img src="assets/load.svg" alt=""> Load Sample
+                </button>
+                <div uk-dropdown="mode: click; pos: bottom-right" class="sample-dropdown">
+                  <ul class="uk-nav uk-dropdown-nav">
+                    <li class="uk-nav-header">Customer Payments</li>
+                    <li><a href="#" data-sample="mt103">MT103: Single Customer Credit Transfer</a></li>
+                    <li class="uk-nav-divider"></li>
+                    <li class="uk-nav-header">Institution Transfers</li>
+                    <li><a href="#" data-sample="mt202">MT202: General Financial Institution Transfer</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <select id="msg-type-select" class="msg-type-select">
+              <option value="auto">Auto-detect</option>
+              <option value="MT103">MT103</option>
+              <option value="MT202">MT202</option>
+            </select>
+          </div>
+        </div>
+        <div class="editor-area">
+          <div class="editor-wrap">
+            <textarea id="mt-input" placeholder="Paste a raw SWIFT MT message here&#10;(or load a sample for quick testing)" spellcheck="false"></textarea>
+            <pre id="mt-highlighted"><code id="mt-code"></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLUE DIVIDER -->
+      <div class="panel-divider"></div>
+
+      <!-- RIGHT PANEL -->
+      <div class="panel-right">
+        <div class="panel-right-toolbar">
+          <span class="panel-right-title">Parsed Output</span>
+          <div class="actions-dropdown-wrap" id="actions-dropdown-wrap">
+            <div class="uk-inline">
+              <button class="toolbar-btn" type="button"><img src="assets/actions.svg" alt=""> Actions &#x25BE;</button>
+              <div uk-dropdown="mode: click; pos: bottom-right" class="actions-dropdown">
+                <ul class="uk-nav uk-nav-default">
+                  <li><a href="#" id="copy-json-btn"><img src="assets/copy.svg" alt="" class="dropdown-icon"> Copy JSON</a></li>
+                  <li><a href="#" id="export-pdf-btn"><img src="assets/export.svg" alt="" class="dropdown-icon"> Export PDF</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="results-area">
+          <div id="results-content" class="results-body">
+            <div class="empty-state" id="empty-state">
+              <img src="assets/info.svg" alt="" class="empty-state-icon">
+              <div class="empty-state-text">
+                Once the left panel has your MT message,<br>
+                click <strong>[Parse Message]</strong> to decode every<br>
+                field tag into structured JSON
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GLOSSARY MODAL -->
+  <div id="glossary-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body glossary-modal-dialog" style="padding:0">
+      <div class="glossary-header">
+        <h3>About SWIFT MT Messages</h3>
+        <button class="uk-modal-close" type="button" uk-close></button>
+      </div>
+      <div class="glossary-body">
+        <p>SWIFT MT (Message Type) messages are the legacy standard used by over 11,000 financial institutions worldwide for interbank communication. Despite the ongoing migration to ISO 20022, MT messages remain in active use across correspondent banking networks.</p>
+
+        <p>Every MT message has a <u>consistent structure</u> made up of envelope blocks and tagged fields:</p>
+
+        <div class="uk-grid uk-grid-medium uk-margin-medium-top" uk-grid>
+          <div class="uk-width-1-4">
+            <span class="block-label block-1">Block 1</span>
+          </div>
+          <div class="uk-width-3-4">
+            <strong>Basic Header</strong>
+            <p>Application ID, service ID, sender's BIC (12 characters), session and sequence numbers. Identifies who sent the message.</p>
+          </div>
+        </div>
+
+        <div class="uk-grid uk-grid-medium uk-margin-medium-top" uk-grid>
+          <div class="uk-width-1-4">
+            <span class="block-label block-2">Block 2</span>
+          </div>
+          <div class="uk-width-3-4">
+            <strong>Application Header</strong>
+            <p>Message type (103, 202, etc.), receiver's BIC, priority, and delivery monitoring. Tells you what kind of message this is and where it's going.</p>
+          </div>
+        </div>
+
+        <div class="uk-grid uk-grid-medium uk-margin-medium-top" uk-grid>
+          <div class="uk-width-1-4">
+            <span class="block-label block-4">Block 4</span>
+          </div>
+          <div class="uk-width-3-4">
+            <strong>Text Block</strong>
+            <p>The actual message content. Each field starts with a <code>:TAG:</code> identifier (e.g. <code>:20:</code>, <code>:32A:</code>) followed by its value. Multi-line values continue until the next tag. This is what the parser decodes.</p>
+          </div>
+        </div>
+
+        <div class="glossary-coverage uk-margin-medium-top">
+          <p><strong>This tool parses Block 4 field tags into structured JSON.</strong> It validates mandatory fields, decodes compound values (like <code>:32A:</code> which encodes date + currency + amount in one string), and maps cryptic tag numbers to human-readable field names.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
