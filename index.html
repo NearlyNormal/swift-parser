@@ -141,7 +141,7 @@
   <div id="glossary-modal" uk-modal>
     <div class="uk-modal-dialog uk-modal-body glossary-modal-dialog" style="padding:0">
       <div class="glossary-header">
-        <h3>About SWIFT MT Messages</h3>
+        <h3>About Swift Parser</h3>
         <button class="uk-modal-close" type="button" uk-close></button>
       </div>
       <div class="glossary-body">
@@ -181,6 +181,30 @@
 
         <div class="glossary-coverage uk-margin-medium-top">
           <p><strong>This tool parses Block 4 field tags into structured JSON.</strong> It validates mandatory fields, decodes compound values (like <code>:32A:</code> which encodes date + currency + amount in one string), and maps cryptic tag numbers to human-readable field names.</p>
+        </div>
+
+        <hr class="uk-margin-medium-top">
+        <div class="uk-padding-small uk-padding-remove-horizontal">
+          <p class="toolkit-heading"><strong>The Payments Toolkit</strong></p>
+          <div class="uk-padding-small"></div>
+          <div class="uk-grid uk-grid-medium uk-margin-top" uk-grid>
+            <div class="uk-width-auto"><span class="uk-badge">1</span></div>
+            <div class="uk-width-1-4"><a href="../iso-bridge/">ISO Bridge</a></div>
+            <div class="uk-width-expand">Translates between SWIFT MT and ISO 20022 with data loss warnings</div>
+            <div class="uk-width-auto"><a href="https://github.com/NearlyNormal/iso-bridge">Github</a></div>
+          </div>
+          <div class="uk-grid uk-grid-medium uk-margin-top" uk-grid>
+            <div class="uk-width-auto"><span class="uk-badge">2</span></div>
+            <div class="uk-width-1-4"><a href="../swift-parser/">Swift Parser</a></div>
+            <div class="uk-width-expand">Decodes MT messages into structured JSON with field-level explanations</div>
+            <div class="uk-width-auto"><a href="https://github.com/NearlyNormal/swift-parser">Github</a></div>
+          </div>
+          <div class="uk-grid uk-grid-medium uk-margin-top" uk-grid>
+            <div class="uk-width-auto"><span class="uk-badge">3</span></div>
+            <div class="uk-width-1-4"><a href="../iso20022-validator/">ISO20022 Validator</a></div>
+            <div class="uk-width-expand">Validates XML against schemas and country scheme profiles</div>
+            <div class="uk-width-auto"><a href="https://github.com/NearlyNormal/iso20022-validator">Github</a></div>
+          </div>
         </div>
       </div>
     </div>

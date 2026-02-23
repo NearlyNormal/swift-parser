@@ -93,6 +93,29 @@ body {
   display: block;
 }
 
+/* ─── TOOLKIT NAV ─── */
+.toolkit-nav {
+  display: flex;
+  gap: 16px;
+  margin-left: 24px;
+  align-items: center;
+}
+.toolkit-link {
+  font-family: var(--font-mono);
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+}
+.toolkit-link:hover {
+  color: var(--accent-dark);
+  text-decoration: none;
+}
+.toolkit-link.active {
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
 /* ─── PARSE BUTTON (main CTA) ─── */
 .validate-btn {
   display: flex;
@@ -982,8 +1005,9 @@ body {
 
 .glossary-header h3 {
   font-family: var(--font-mono);
-  font-size: var(--size-md);
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 300;
+  text-transform: uppercase;
   margin: 0;
 }
 
@@ -1015,6 +1039,21 @@ body {
 
 .glossary-coverage p {
   margin: 0;
+}
+
+.glossary-body .uk-badge {
+  background: #222;
+  min-width: 28px;
+  height: 28px;
+  line-height: 28px;
+}
+
+.glossary-body .uk-width-1-4 a {
+  font-size: 1.15rem;
+}
+
+.glossary-body .toolkit-heading {
+  font-size: 1.25rem;
 }
 
 /* ─── BLOCK LABELS ─── */
